@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeerLink - P2P File Transfer & Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h1>PeerLink</h1>
+            </div>
+            <div class="nav-actions" id="nav-actions" style="display: none;">
+                <span id="connection-status" class="status-badge connected">Connected</span>
+                <button id="disconnect-btn" class="btn btn-outline">Disconnect</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        <!-- Hero / Welcome Panel -->
+        <section id="hero-panel" class="panel hero-panel active">
+            <div class="hero-content">
+                <h2>Fast, Private, Serverless.</h2>
+                <p>Exchange messages and transfer files in real-time with devices on your local WiFi network. No cloud needed.</p>
+                
+                <div class="auth-panel card">
+                    <h3>Connect to a Peer</h3>
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="host">Host</button>
+                        <button class="tab-btn" data-tab="join">Join</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="host-tab">
+                        <p class="tab-desc">Start listening for incoming connections on your network.</p>
+                        <div class="input-group">
+                            <label>Your Local IP</label>
+                            <input type="text" value="192.168.1.100" readonly class="input-readonly">
+                        </div>
+                        <button id="start-server-btn" class="btn btn-primary w-full">Start Listening</button>
+                    </div>
+                    
+                    <div class="tab-content" id="join-tab" style="display: none;">
+                        <p class="tab-desc">Connect to an existing host on your network.</p>
+                        <div class="input-group">
+                            <label>Host IP Address</label>
+                            <input type="text" id="host-ip-input" placeholder="e.g. 192.168.1.100" class="input-field">
+                        </div>
+                        <button id="connect-client-btn" class="btn btn-primary w-full">Connect to Peer</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main App Interface (Hidden until connected) -->
+        <section id="app-panel" class="panel app-panel" style="display: none;">
+            <div class="dashboard-grid">
+                
+                <!-- Activity Panel (Connected Devices) -->
+                <div class="card activity-panel">
+                    <h3 class="card-title">Network Activity</h3>
+                    <div class="device-list">
+                        <div class="device-item active">
+                            <div class="device-avatar">P</div>
+                            <div class="device-info">
+                                <h4>Peer Device</h4>
+                                <span>192.168.1.105</span>
+                            </div>
+                            <div class="device-status"></div>
+                        </div>
+                    </div>
+                    <div class="connection-stats">
+                        <div class="stat">
+                            <span class="stat-label">Ping</span>
+                            <span class="stat-value">12ms</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Protocol</span>
+                            <span class="stat-value">TCP Socket</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Content Card -->
+                <div class="card chat-card">
+                    <h3 class="card-title">Real-Time Chat</h3>
+                    <div class="chat-container" id="chat-container">
+                        <div class="message system">
+                            <p>Connection established with Peer.</p>
+                        </div>
+                        <!-- Messages will be injected here -->
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="message-input" placeholder="Type a message..." class="input-field">
+                        <button id="send-msg-btn" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+
+                <!-- File Transfer Content Card -->
+                <div class="card file-card">
+                    <h3 class="card-title">File Transfer</h3>
+                    
+                    <div class="file-drop-zone" id="file-drop-zone">
+                        <div class="upload-icon">📄</div>
+                        <p>Drag & drop files here or <span>browse</span></p>
+                        <input type="file" id="file-input" style="display: none;">
+                    </div>
+                    
+                    <div class="transfer-list" id="transfer-list">
+                        <h4 class="section-subtitle">Recent Transfers</h4>
+                        <!-- Transfer items will be injected here -->
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
