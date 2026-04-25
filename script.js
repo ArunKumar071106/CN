@@ -16,6 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Set Local IP Display dynamically from backend
+    const localIpDisplay = document.getElementById('local-ip-display');
+    if (localIpDisplay) {
+        // Try to fetch the real IP from the Python server
+        fetch('http://localhost:8000/api/ip')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.ip) {
+                    localIpDisplay.value = data.ip;
+                }
+            })
+            .catch(err => {
+                // Fallback to window.location if API fails
+                const hostname = window.location.hostname;
+                if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '') {
+                    localIpDisplay.value = hostname;
+                } else {
+                    localIpDisplay.value = 'Failed to load IP';
+                }
+            });
+    }
+
     // Connection Simulation
     const startServerBtn = document.getElementById('start-server-btn');
     const connectClientBtn = document.getElementById('connect-client-btn');
