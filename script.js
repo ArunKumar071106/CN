@@ -5,22 +5,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Remove active class from all
             tabBtns.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.style.display = 'none');
             
-            // Add active class to clicked
             btn.classList.add('active');
             const tabId = btn.getAttribute('data-tab');
             document.getElementById(`${tabId}-tab`).style.display = 'block';
         });
     });
 
+    let SERVER_URL = '';
+    if (window.location.protocol.startsWith('http')) {
+        SERVER_URL = window.location.origin;
+    } else {
+        SERVER_URL = 'http://localhost:8000'; // fallback if opened via file://
+    }
+
     // Set Local IP Display dynamically from backend
     const localIpDisplay = document.getElementById('local-ip-display');
     if (localIpDisplay) {
-        // Try to fetch the real IP from the Python server
-        fetch('http://localhost:8000/api/ip')
+        fetch(`${SERVER_URL}/api/ip`)
             .then(response => response.json())
             .then(data => {
                 if (data && data.ip) {
@@ -28,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .catch(err => {
-                // Fallback to window.location if API fails
                 const hostname = window.location.hostname;
                 if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '') {
                     localIpDisplay.value = hostname;
@@ -38,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // Connection Simulation
+    // Connection Setup
     const startServerBtn = document.getElementById('start-server-btn');
     const connectClientBtn = document.getElementById('connect-client-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
@@ -47,50 +50,115 @@ document.addEventListener('DOMContentLoaded', () => {
     const appPanel = document.getElementById('app-panel');
     const navActions = document.getElementById('nav-actions');
 
+    let socket = null;
+    let isConnected = false;
+    let myId = Math.random().toString(36).substr(2, 9); // Unique ID for this browser tab
+
     function connect() {
-        // Hide Hero, Show App
         heroPanel.style.display = 'none';
         appPanel.style.display = 'block';
         navActions.style.display = 'flex';
+        isConnected = true;
         
-        // Add welcome message
-        addMessage('System connected and ready for P2P transfer.', 'system');
+        addMessage('System connecting...', 'system');
+        
+        socket = io(SERVER_URL);
+        
+        socket.on('connect', () => {
+            document.getElementById('connection-status').textContent = 'Connected';
+            document.getElementById('connection-status').classList.remove('disconnected');
+            document.getElementById('connection-status').classList.add('connected');
+            addMessage('Connected to Peer network.', 'system');
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connection-status').textContent = 'Disconnected';
+            document.getElementById('connection-status').classList.add('disconnected');
+            document.getElementById('connection-status').classList.remove('connected');
+            addMessage('Disconnected from Peer network.', 'system');
+        });
+        
+        socket.on('system_message', (data) => {
+            addMessage(data.text, 'system');
+        });
+
+        socket.on('chat_message', (data) => {
+            if (data.sender !== myId) {
+                addMessage(data.text, 'received');
+            }
+        });
+        
+        // Progress for both sender and receiver
+        socket.on('file_progress', (data) => {
+            const transferItem = document.getElementById(`transfer-${data.transfer_id}`);
+            if (transferItem) {
+                const span = transferItem.querySelector('span');
+                if (data.progress < 100) {
+                    span.textContent = `Transferring... ${data.progress}%`;
+                } else {
+                    span.textContent = `Processing...`;
+                }
+            } else {
+                // If it's a new transfer we didn't start, show receiving UI
+                const transferList = document.getElementById('transfer-list');
+                const newItem = document.createElement('div');
+                newItem.className = 'transfer-item';
+                newItem.id = `transfer-${data.transfer_id}`;
+                newItem.innerHTML = `
+                    <div class="file-icon">📥</div>
+                    <div class="file-details">
+                        <h4>${data.filename}</h4>
+                        <span>Receiving... ${data.progress}%</span>
+                    </div>
+                `;
+                transferList.prepend(newItem);
+            }
+        });
+        
+        socket.on('file_received', (data) => {
+            // Received a complete file
+            const transferList = document.getElementById('transfer-list');
+            const transferItem = document.createElement('div');
+            transferItem.className = 'transfer-item';
+            transferItem.innerHTML = `
+                <div class="file-icon">📥</div>
+                <div class="file-details">
+                    <h4>${data.filename}</h4>
+                    <span>${data.size} MB • Ready to Download</span>
+                    <br/>
+                    <a href="${SERVER_URL}${data.url}" download class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem; margin-top: 5px; text-decoration: none; display: inline-block;">Download</a>
+                </div>
+            `;
+            transferList.prepend(transferItem);
+        });
     }
 
     function disconnect() {
+        isConnected = false;
+        if(socket) {
+            socket.disconnect();
+            socket = null;
+        }
+        
         appPanel.style.display = 'none';
         navActions.style.display = 'none';
         heroPanel.style.display = 'flex';
         
-        // Clear chat
         const chatContainer = document.getElementById('chat-container');
         chatContainer.innerHTML = '<div class="message system"><p>Connection established with Peer.</p></div>';
     }
 
     startServerBtn.addEventListener('click', () => {
-        startServerBtn.textContent = 'Listening on Port 5000...';
-        startServerBtn.style.opacity = '0.7';
-        
-        // Simulate peer connecting after 1.5s
-        setTimeout(() => {
-            connect();
-            startServerBtn.textContent = 'Start Listening';
-            startServerBtn.style.opacity = '1';
-        }, 1500);
+        // Server already running in Python, just connect via socket
+        connect();
     });
 
     connectClientBtn.addEventListener('click', () => {
-        const ip = document.getElementById('host-ip-input').value;
-        if(!ip) {
-            alert('Please enter a host IP address');
-            return;
+        const ip = document.getElementById('host-ip-input').value.trim();
+        if(ip) {
+            SERVER_URL = `http://${ip}:8000`;
         }
-        connectClientBtn.textContent = 'Connecting...';
-        
-        setTimeout(() => {
-            connect();
-            connectClientBtn.textContent = 'Connect to Peer';
-        }, 1000);
+        connect();
     });
 
     disconnectBtn.addEventListener('click', disconnect);
@@ -110,14 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function sendMessage() {
         const text = messageInput.value.trim();
-        if(text) {
-            addMessage(text, 'sent');
+        if(text && isConnected && socket) {
+            // Optimistic UI update
             messageInput.value = '';
+            addMessage(text, 'sent');
             
-            // Simulate reply
-            setTimeout(() => {
-                addMessage('Echo: ' + text, 'received');
-            }, 1000 + Math.random() * 1000);
+            socket.emit('chat_message', {
+                text: text,
+                sender: myId
+            });
         }
     }
 
@@ -126,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.key === 'Enter') sendMessage();
     });
 
-    // File Transfer Functionality
+    // File Transfer Functionality - Chunked Transfer
     const fileDropZone = document.getElementById('file-drop-zone');
     const fileInput = document.getElementById('file-input');
     const transferList = document.getElementById('transfer-list');
@@ -151,50 +220,87 @@ document.addEventListener('DOMContentLoaded', () => {
         fileDropZone.style.backgroundColor = 'var(--bg-color)';
         
         if(e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files[0]);
+            uploadFileChunked(e.dataTransfer.files[0]);
         }
     });
 
     fileInput.addEventListener('change', () => {
         if(fileInput.files.length) {
-            handleFile(fileInput.files[0]);
+            uploadFileChunked(fileInput.files[0]);
         }
     });
 
-    function handleFile(file) {
-        const size = (file.size / 1024 / 1024).toFixed(2);
+    function uploadFileChunked(file) {
+        if (!socket || !isConnected) {
+            alert('Not connected to peer.');
+            return;
+        }
+
+        const CHUNK_SIZE = 16384; // 16KB chunk size as per P2P design
+        const transfer_id = 'tx_' + Math.random().toString(36).substr(2, 9);
+        const size_mb = (file.size / 1024 / 1024).toFixed(2);
         
+        // Setup local UI
         const transferItem = document.createElement('div');
         transferItem.className = 'transfer-item';
-        
-        const transferId = 'transfer-' + Date.now();
-        
+        transferItem.id = `transfer-${transfer_id}`;
         transferItem.innerHTML = `
             <div class="file-icon">📁</div>
             <div class="file-details">
                 <h4>${file.name}</h4>
-                <span>${size} MB • Sending...</span>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="${transferId}"></div>
-                </div>
+                <span>${size_mb} MB • Starting...</span>
             </div>
         `;
-        
         transferList.prepend(transferItem);
-        
-        // Simulate file transfer progress
-        const progressBar = document.getElementById(transferId);
-        let progress = 0;
-        
-        const interval = setInterval(() => {
-            progress += Math.random() * 20;
-            if(progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                transferItem.querySelector('span').textContent = `${size} MB • Completed`;
-                transferItem.querySelector('span').style.color = 'var(--success)';
-            }
-            progressBar.style.width = `${progress}%`;
-        }, 300);
+
+        // Tell server transfer is starting
+        socket.emit('file_transfer_start', {
+            filename: file.name,
+            size: file.size,
+            transfer_id: transfer_id
+        });
+
+        // Start chunking
+        let offset = 0;
+
+        function readNextChunk() {
+            const slice = file.slice(offset, offset + CHUNK_SIZE);
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                socket.emit('file_chunk', {
+                    transfer_id: transfer_id,
+                    chunk: e.target.result
+                });
+
+                offset += CHUNK_SIZE;
+
+                if (offset < file.size) {
+                    // Update local progress quickly
+                    const progress = Math.floor((offset / file.size) * 100);
+                    transferItem.querySelector('span').textContent = `${size_mb} MB • ${progress}%`;
+                    
+                    // read next after short delay to not overwhelm websocket
+                    setTimeout(readNextChunk, 2);
+                } else {
+                    // Done
+                    transferItem.querySelector('span').textContent = `${size_mb} MB • Sent`;
+                    transferItem.querySelector('span').style.color = 'var(--success)';
+                    
+                    socket.emit('file_transfer_complete', {
+                        transfer_id: transfer_id
+                    });
+                }
+            };
+            
+            reader.onerror = (err) => {
+                transferItem.querySelector('span').textContent = `Upload failed`;
+                transferItem.querySelector('span').style.color = 'var(--danger)';
+            };
+
+            reader.readAsArrayBuffer(slice);
+        }
+
+        readNextChunk();
     }
 });
