@@ -14,130 +14,122 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    let SERVER_URL = '';
-    if (window.location.protocol.startsWith('http')) {
-        SERVER_URL = window.location.origin;
-    } else {
-        SERVER_URL = 'http://localhost:8000'; // fallback if opened via file://
-    }
-
-    // Set Local IP Display dynamically from backend
-    const localIpDisplay = document.getElementById('local-ip-display');
-    if (localIpDisplay) {
-        fetch(`${SERVER_URL}/api/ip`)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.ip) {
-                    localIpDisplay.value = data.ip;
-                }
-            })
-            .catch(err => {
-                const hostname = window.location.hostname;
-                if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '') {
-                    localIpDisplay.value = hostname;
-                } else {
-                    localIpDisplay.value = 'Failed to load IP';
-                }
-            });
-    }
-
-    // Connection Setup
-    const startServerBtn = document.getElementById('start-server-btn');
-    const connectClientBtn = document.getElementById('connect-client-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    
     const heroPanel = document.getElementById('hero-panel');
     const appPanel = document.getElementById('app-panel');
     const navActions = document.getElementById('nav-actions');
+    const localPeerIdDisplay = document.getElementById('local-peer-id');
+    const copyIdBtn = document.getElementById('copy-id-btn');
+    const connectClientBtn = document.getElementById('connect-client-btn');
+    const remotePeerIdInput = document.getElementById('remote-peer-id');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const connectedPeerIdDisplay = document.getElementById('connected-peer-id');
 
-    let socket = null;
+    let peer = null;
+    let conn = null;
     let isConnected = false;
-    let myId = Math.random().toString(36).substr(2, 9); // Unique ID for this browser tab
 
-    function connect() {
-        heroPanel.style.display = 'none';
-        appPanel.style.display = 'block';
-        navActions.style.display = 'flex';
-        isConnected = true;
-        
-        addMessage('System connecting...', 'system');
-        
-        socket = io(SERVER_URL);
-        
-        socket.on('connect', () => {
-            document.getElementById('connection-status').textContent = 'Connected';
-            document.getElementById('connection-status').classList.remove('disconnected');
-            document.getElementById('connection-status').classList.add('connected');
-            addMessage('Connected to Peer network.', 'system');
+    // Generate random 6-character alphanumeric ID
+    function generateId() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    // Initialize PeerJS
+    function initPeer() {
+        const myId = generateId();
+        peer = new Peer(myId, {
+            debug: 2
         });
 
-        socket.on('disconnect', () => {
-            document.getElementById('connection-status').textContent = 'Disconnected';
-            document.getElementById('connection-status').classList.add('disconnected');
-            document.getElementById('connection-status').classList.remove('connected');
-            addMessage('Disconnected from Peer network.', 'system');
-        });
-        
-        socket.on('system_message', (data) => {
-            addMessage(data.text, 'system');
+        peer.on('open', (id) => {
+            localPeerIdDisplay.value = id;
         });
 
-        socket.on('chat_message', (data) => {
-            if (data.sender !== myId) {
-                addMessage(data.text, 'received');
+        peer.on('connection', (connection) => {
+            if (conn && conn.open) {
+                // Reject new connections if we are already connected
+                connection.on('open', () => {
+                    connection.send({ type: 'system', text: 'Peer is already busy.' });
+                    setTimeout(() => connection.close(), 500);
+                });
+                return;
             }
+            
+            setupConnection(connection);
         });
-        
-        // Progress for both sender and receiver
-        socket.on('file_progress', (data) => {
-            const transferItem = document.getElementById(`transfer-${data.transfer_id}`);
-            if (transferItem) {
-                const span = transferItem.querySelector('span');
-                if (data.progress < 100) {
-                    span.textContent = `Transferring... ${data.progress}%`;
-                } else {
-                    span.textContent = `Processing...`;
-                }
+
+        peer.on('error', (err) => {
+            console.error('Peer error:', err);
+            if (err.type === 'peer-unavailable') {
+                alert("Could not find the friend's Peer ID. Make sure they are online and the ID is correct.");
             } else {
-                // If it's a new transfer we didn't start, show receiving UI
-                const transferList = document.getElementById('transfer-list');
-                const newItem = document.createElement('div');
-                newItem.className = 'transfer-item';
-                newItem.id = `transfer-${data.transfer_id}`;
-                newItem.innerHTML = `
-                    <div class="file-icon">📥</div>
-                    <div class="file-details">
-                        <h4>${data.filename}</h4>
-                        <span>Receiving... ${data.progress}%</span>
-                    </div>
-                `;
-                transferList.prepend(newItem);
+                alert(`Error: ${err.message}`);
             }
-        });
-        
-        socket.on('file_received', (data) => {
-            // Received a complete file
-            const transferList = document.getElementById('transfer-list');
-            const transferItem = document.createElement('div');
-            transferItem.className = 'transfer-item';
-            transferItem.innerHTML = `
-                <div class="file-icon">📥</div>
-                <div class="file-details">
-                    <h4>${data.filename}</h4>
-                    <span>${data.size} MB • Ready to Download</span>
-                    <br/>
-                    <a href="${SERVER_URL}${data.url}" download class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem; margin-top: 5px; text-decoration: none; display: inline-block;">Download</a>
-                </div>
-            `;
-            transferList.prepend(transferItem);
         });
     }
 
-    function disconnect() {
+    initPeer();
+
+    copyIdBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(localPeerIdDisplay.value).then(() => {
+            const originalText = copyIdBtn.textContent;
+            copyIdBtn.textContent = "Copied!";
+            setTimeout(() => { copyIdBtn.textContent = originalText; }, 2000);
+        });
+    });
+
+    connectClientBtn.addEventListener('click', () => {
+        const remoteId = remotePeerIdInput.value.trim().toUpperCase();
+        if(!remoteId) {
+            alert('Please enter a valid Peer ID');
+            return;
+        }
+        if(remoteId === peer.id) {
+            alert('You cannot connect to yourself!');
+            return;
+        }
+
+        const connection = peer.connect(remoteId, {
+            reliable: true
+        });
+
+        setupConnection(connection);
+    });
+
+    function setupConnection(connection) {
+        conn = connection;
+        
+        conn.on('open', () => {
+            isConnected = true;
+            connectedPeerIdDisplay.textContent = conn.peer;
+            
+            heroPanel.style.display = 'none';
+            appPanel.style.display = 'block';
+            navActions.style.display = 'flex';
+            
+            document.getElementById('connection-status').textContent = 'Connected';
+            document.getElementById('connection-status').classList.add('connected');
+            document.getElementById('connection-status').classList.remove('disconnected');
+            
+            addMessage('Connection established. Messages are secure and peer-to-peer.', 'system');
+        });
+
+        conn.on('data', (data) => {
+            handleIncomingData(data);
+        });
+
+        conn.on('close', () => {
+            disconnect(false);
+        });
+    }
+
+    function disconnect(manual = true) {
         isConnected = false;
-        if(socket) {
-            socket.disconnect();
-            socket = null;
+        if(conn) {
+            if(manual) {
+                conn.send({ type: 'system', text: 'Peer disconnected.' });
+            }
+            conn.close();
+            conn = null;
         }
         
         appPanel.style.display = 'none';
@@ -145,23 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
         heroPanel.style.display = 'flex';
         
         const chatContainer = document.getElementById('chat-container');
-        chatContainer.innerHTML = '<div class="message system"><p>Connection established with Peer.</p></div>';
+        chatContainer.innerHTML = '<div class="message system"><p>Connection established. Messages are encrypted peer-to-peer.</p></div>';
+        
+        if(!manual) {
+            alert('The connection was lost or closed by the peer.');
+        }
     }
 
-    startServerBtn.addEventListener('click', () => {
-        // Server already running in Python, just connect via socket
-        connect();
-    });
-
-    connectClientBtn.addEventListener('click', () => {
-        const ip = document.getElementById('host-ip-input').value.trim();
-        if(ip) {
-            SERVER_URL = `http://${ip}:8000`;
-        }
-        connect();
-    });
-
-    disconnectBtn.addEventListener('click', disconnect);
+    disconnectBtn.addEventListener('click', () => disconnect(true));
 
     // Chat Functionality
     const messageInput = document.getElementById('message-input');
@@ -178,14 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function sendMessage() {
         const text = messageInput.value.trim();
-        if(text && isConnected && socket) {
+        if(text && isConnected && conn) {
             // Optimistic UI update
             messageInput.value = '';
             addMessage(text, 'sent');
             
-            socket.emit('chat_message', {
-                text: text,
-                sender: myId
+            conn.send({
+                type: 'chat',
+                text: text
             });
         }
     }
@@ -195,10 +178,77 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.key === 'Enter') sendMessage();
     });
 
-    // File Transfer Functionality - Chunked Transfer
+    // --- File Transfer Functionality ---
     const fileDropZone = document.getElementById('file-drop-zone');
     const fileInput = document.getElementById('file-input');
     const transferList = document.getElementById('transfer-list');
+
+    // To store incoming chunks
+    const incomingFiles = {};
+
+    function handleIncomingData(data) {
+        if (data.type === 'system') {
+            addMessage(data.text, 'system');
+        } else if (data.type === 'chat') {
+            addMessage(data.text, 'received');
+        } else if (data.type === 'file_start') {
+            incomingFiles[data.transfer_id] = {
+                filename: data.filename,
+                size: data.size,
+                chunks: [],
+                receivedBytes: 0
+            };
+            
+            const transferItem = document.createElement('div');
+            transferItem.className = 'transfer-item';
+            transferItem.id = `transfer-${data.transfer_id}`;
+            transferItem.innerHTML = `
+                <div class="file-icon">📥</div>
+                <div class="file-details">
+                    <h4>${data.filename}</h4>
+                    <span>Receiving... 0%</span>
+                </div>
+            `;
+            transferList.prepend(transferItem);
+            
+        } else if (data.type === 'file_chunk') {
+            const fileData = incomingFiles[data.transfer_id];
+            if(!fileData) return;
+            
+            fileData.chunks.push(data.chunk);
+            fileData.receivedBytes += data.chunk.byteLength;
+            
+            const progress = Math.floor((fileData.receivedBytes / fileData.size) * 100);
+            const transferItem = document.getElementById(`transfer-${data.transfer_id}`);
+            if (transferItem && progress % 5 === 0) { // Update UI every 5%
+                transferItem.querySelector('span').textContent = `Receiving... ${progress}%`;
+            }
+            
+        } else if (data.type === 'file_complete') {
+            const fileData = incomingFiles[data.transfer_id];
+            if(!fileData) return;
+            
+            const transferItem = document.getElementById(`transfer-${data.transfer_id}`);
+            if (transferItem) {
+                const blob = new Blob(fileData.chunks);
+                const url = URL.createObjectURL(blob);
+                const size_mb = (fileData.size / 1024 / 1024).toFixed(2);
+                
+                transferItem.innerHTML = `
+                    <div class="file-icon">📥</div>
+                    <div class="file-details">
+                        <h4>${fileData.filename}</h4>
+                        <span>${size_mb} MB • Ready</span>
+                        <br/>
+                        <a href="${url}" download="${fileData.filename}" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem; margin-top: 5px; text-decoration: none; display: inline-block;">Save to Device</a>
+                    </div>
+                `;
+            }
+            
+            // Cleanup memory
+            delete incomingFiles[data.transfer_id];
+        }
+    }
 
     fileDropZone.addEventListener('click', () => fileInput.click());
 
@@ -231,16 +281,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function uploadFileChunked(file) {
-        if (!socket || !isConnected) {
+        if (!conn || !isConnected) {
             alert('Not connected to peer.');
             return;
         }
 
-        const CHUNK_SIZE = 16384; // 16KB chunk size as per P2P design
+        const CHUNK_SIZE = 65536; // 64KB chunks for WebRTC optimization
         const transfer_id = 'tx_' + Math.random().toString(36).substr(2, 9);
         const size_mb = (file.size / 1024 / 1024).toFixed(2);
         
-        // Setup local UI
         const transferItem = document.createElement('div');
         transferItem.className = 'transfer-item';
         transferItem.id = `transfer-${transfer_id}`;
@@ -253,14 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         transferList.prepend(transferItem);
 
-        // Tell server transfer is starting
-        socket.emit('file_transfer_start', {
+        conn.send({
+            type: 'file_start',
             filename: file.name,
             size: file.size,
             transfer_id: transfer_id
         });
 
-        // Start chunking
         let offset = 0;
 
         function readNextChunk() {
@@ -268,36 +316,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = new FileReader();
 
             reader.onload = (e) => {
-                socket.emit('file_chunk', {
+                conn.send({
+                    type: 'file_chunk',
                     transfer_id: transfer_id,
-                    chunk: e.target.result
+                    chunk: e.target.result // ArrayBuffer
                 });
 
                 offset += CHUNK_SIZE;
 
                 if (offset < file.size) {
-                    // Update local progress quickly
                     const progress = Math.floor((offset / file.size) * 100);
-                    transferItem.querySelector('span').textContent = `${size_mb} MB • ${progress}%`;
-                    
-                    // read next after short delay to not overwhelm websocket
-                    setTimeout(readNextChunk, 2);
+                    if (progress % 5 === 0) {
+                        transferItem.querySelector('span').textContent = `${size_mb} MB • ${progress}%`;
+                    }
+                    // Timeout to yield to browser event loop
+                    setTimeout(readNextChunk, 1);
                 } else {
-                    // Done
                     transferItem.querySelector('span').textContent = `${size_mb} MB • Sent`;
                     transferItem.querySelector('span').style.color = 'var(--success)';
                     
-                    socket.emit('file_transfer_complete', {
+                    conn.send({
+                        type: 'file_complete',
                         transfer_id: transfer_id
                     });
                 }
             };
             
-            reader.onerror = (err) => {
-                transferItem.querySelector('span').textContent = `Upload failed`;
-                transferItem.querySelector('span').style.color = 'var(--danger)';
-            };
-
             reader.readAsArrayBuffer(slice);
         }
 
