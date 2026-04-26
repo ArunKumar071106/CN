@@ -1,131 +1,353 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PeerLink - P2P File Transfer & Chat</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PeerLink — P2P File Transfer & Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <div class="logo-icon"></div>
-                <h1>PeerLink</h1>
-            </div>
-            <div class="nav-actions" id="nav-actions" style="display: none;">
-                <span id="connection-status" class="status-badge connected">Connected</span>
-                <button id="disconnect-btn" class="btn btn-outline">Disconnect</button>
-            </div>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" id="logoBtn">
+      <span class="logo-bolt">⚡</span>
+      <span class="logo-text">PeerLink</span>
+    </div>
+    <!-- Landing nav -->
+    <ul class="nav-links" id="landingNav">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#tech">Tech Stack</a></li>
+      <li><button class="btn-nav" id="launchBtn">Launch App</button></li>
+    </ul>
+    <!-- App nav -->
+    <div class="nav-app" id="appNav" style="display:none;">
+      <div class="conn-pill" id="connPill">
+        <span class="conn-dot disconnected" id="connDot"></span>
+        <span id="connLabel">Disconnected</span>
+      </div>
+      <button class="btn-nav-sm" id="disconnectBtn" style="display:none;">Disconnect</button>
+      <button class="btn-nav-sm outline" id="backBtn">← Landing</button>
+    </div>
+    <button class="hamburger" id="hamburger">&#9776;</button>
+  </div>
+  <ul class="nav-mobile" id="navMobile">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#tech">Tech Stack</a></li>
+    <li><button class="btn-nav" id="launchBtnMobile">Launch App</button></li>
+  </ul>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════════════ -->
+<div id="landingPage">
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-left">
+      <div class="hero-badge">🌐 No Internet · No Cloud · No Server</div>
+      <h1>Transfer Files &amp; Chat<br/><span class="hl">Over Local WiFi</span></h1>
+      <p class="hero-sub">A peer-to-peer system built on TCP sockets. One device hosts, another connects — messages and files flow instantly over your local network.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" id="heroLaunchBtn">⚡ Launch App</button>
+        <a href="#how-it-works" class="btn-ghost">How It Works</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><span class="hstat-n">TCP</span><span class="hstat-l">Protocol</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">P2P</span><span class="hstat-l">Architecture</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">16KB</span><span class="hstat-l">Chunk Size</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">GBN</span><span class="hstat-l">Reliability</span></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hv-card">
+        <div class="hv-hdr"><span class="dot g"></span>Host Device</div>
+        <div class="hv-ip">192.168.1.10 : 9090</div>
+        <div class="hv-st">🟢 Listening on port 9090</div>
+        <div class="hv-msg s">Hello from Host! 👋</div>
+        <div class="hv-msg r">report.pdf received ✅</div>
+      </div>
+      <div class="hv-conn">
+        <div class="pulse-dot"></div>
+        <div class="vl"></div>
+        <div class="tcp-pill">TCP</div>
+        <div class="vl"></div>
+        <div class="pulse-dot"></div>
+      </div>
+      <div class="hv-card">
+        <div class="hv-hdr"><span class="dot b"></span>Peer Device</div>
+        <div class="hv-ip">192.168.1.25 : 9090</div>
+        <div class="hv-st">🔵 Connected</div>
+        <div class="hv-msg r">Hello from Host! 👋</div>
+        <div class="hv-msg s">Sending report.pdf 📄</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="lsec" id="features">
+    <div class="sec-hd"><span class="sec-tag">Core Capabilities</span><h2>Everything You Need,<br/>Nothing You Don't</h2></div>
+    <div class="feat-grid">
+      <div class="fc yellow"><div class="fi">💬</div><h3>Real-Time Chat</h3><p>Instant message delivery over persistent TCP connections. UTF-8 encoded, <code>MSG::</code> protocol.</p><span class="ftag">MSG:: protocol</span></div>
+      <div class="fc"><div class="fi">📁</div><h3>Chunked File Transfer</h3><p>Files sent as 16KB binary chunks — exactly like the C repo's <code>BUF_SIZE=16*1024</code>. Receiver reconstructs and verifies integrity.</p><span class="ftag">FILE:: protocol</span></div>
+      <div class="fc"><div class="fi">🔁</div><h3>Go-Back-N Reliability</h3><p>GBN sliding window protocol — ACK/NACK handling, retransmission, configurable window size N.</p><span class="ftag">GBN · Window=16</span></div>
+      <div class="fc"><div class="fi">🏠</div><h3>Chatrooms</h3><p>Create or join named chatrooms — public or password-protected. Broadcast <code>@all</code> or unicast <code>@username</code>.</p><span class="ftag">create / join</span></div>
+      <div class="fc"><div class="fi">🧵</div><h3>Threaded I/O</h3><p>Concurrent send/receive threads for full-duplex communication. No operation blocks another.</p><span class="ftag">Multi-threaded</span></div>
+      <div class="fc"><div class="fi">🔒</div><h3>Fully Offline</h3><p>Operates entirely on your local WiFi. No cloud, no internet. Bind to port 9090 and communicate within LAN.</p><span class="ftag">LAN Only</span></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="lsec alt" id="how-it-works">
+    <div class="sec-hd"><span class="sec-tag">Workflow</span><h2>Up and Running in<br/>Three Simple Steps</h2></div>
+    <div class="steps">
+      <div class="step-card">
+        <div class="step-n">01</div>
+        <div class="step-body">
+          <div class="step-ico">🖥️</div>
+          <h3>Host Starts Server</h3>
+          <p>One device binds to port 9090 and listens for incoming TCP connections on the local network.</p>
+          <div class="codeblock"><span class="cc"># server.py</span><br/>server.bind(('0.0.0.0', 9090))<br/>server.listen(25)</div>
         </div>
-    </nav>
+      </div>
+      <div class="step-arr">→</div>
+      <div class="step-card">
+        <div class="step-n">02</div>
+        <div class="step-body">
+          <div class="step-ico">🔗</div>
+          <h3>Peer Connects</h3>
+          <p>Client enters username, creates or joins a chatroom. Server verifies uniqueness and routes messages.</p>
+          <div class="codeblock"><span class="cc"># client.py</span><br/>client.connect(('192.168.1.10', 9090))</div>
+        </div>
+      </div>
+      <div class="step-arr">→</div>
+      <div class="step-card">
+        <div class="step-n">03</div>
+        <div class="step-body">
+          <div class="step-ico">🚀</div>
+          <h3>Chat &amp; Transfer</h3>
+          <p>Send messages or request files. File transfers use UDP + Go-Back-N. Chat uses TCP relay.</p>
+          <div class="codeblock"><span class="cc"># Protocol</span><br/>MSG::Hello there!<br/>FILE::report.pdf::4096</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <main class="main-container">
-        <!-- Hero / Welcome Panel -->
-        <section id="hero-panel" class="panel hero-panel active">
-            <div class="hero-content">
-                <h2>Fast, Private, Serverless.</h2>
-                <p>Exchange messages and transfer files securely directly between browsers using WebRTC. No backend server needed.</p>
-                
-                <div class="auth-panel card">
-                    <h3>Connect to a Peer</h3>
-                    <div class="tabs">
-                        <button class="tab-btn active" data-tab="host">My ID</button>
-                        <button class="tab-btn" data-tab="join">Connect</button>
-                    </div>
-                    
-                    <div class="tab-content active" id="host-tab">
-                        <p class="tab-desc">Share this unique ID with your friend so they can connect to you.</p>
-                        <div class="input-group">
-                            <label>Your Peer ID</label>
-                            <input type="text" id="local-peer-id" value="Generating..." readonly class="input-readonly" style="text-align: center; font-weight: bold; font-family: monospace; letter-spacing: 2px;">
-                        </div>
-                        <button id="copy-id-btn" class="btn btn-primary w-full">Copy ID</button>
-                        <p style="text-align:center; font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">Waiting for connection...</p>
-                    </div>
-                    
-                    <div class="tab-content" id="join-tab" style="display: none;">
-                        <p class="tab-desc">Connect to a friend by entering their Peer ID below.</p>
-                        <div class="input-group">
-                            <label>Friend's Peer ID</label>
-                            <input type="text" id="remote-peer-id" placeholder="e.g. 1a2b3c4d" class="input-field" style="text-align: center; font-family: monospace;">
-                        </div>
-                        <button id="connect-client-btn" class="btn btn-primary w-full">Connect</button>
-                    </div>
-                </div>
+  <!-- LAUNCH CTA -->
+  <section class="lsec cta-sec" id="app-section">
+    <div class="cta-box">
+      <div class="cta-left">
+        <h2>Try It Right Now</h2>
+        <p>Open this page in two browser tabs. Connect them using Peer IDs. Chat and transfer files — peer-to-peer, no server needed.</p>
+        <div class="cta-steps">
+          <div class="cs"><span class="cs-n">1</span>Open in <strong>two tabs</strong></div>
+          <div class="cs"><span class="cs-n">2</span>Tab 1: Copy your <strong>Peer ID</strong></div>
+          <div class="cs"><span class="cs-n">3</span>Tab 2: Paste &amp; <strong>Connect</strong></div>
+          <div class="cs"><span class="cs-n">4</span>Chat &amp; <strong>transfer files</strong></div>
+        </div>
+      </div>
+      <button class="btn-primary btn-xl" id="ctaLaunchBtn">⚡ Open PeerLink App</button>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="lsec" id="tech">
+    <div class="sec-hd"><span class="sec-tag">Under the Hood</span><h2>Technical Architecture</h2></div>
+    <div class="tech-grid">
+      <div class="tc"><div class="ti">🐍</div><h4>Python / C</h4><p>server.py, client.py, transfer.c — socket programming with built-in networking libraries</p></div>
+      <div class="tc"><div class="ti">🔌</div><h4>TCP Sockets</h4><p>Reliable, ordered, connection-oriented data transmission for chat and control messages</p></div>
+      <div class="tc"><div class="ti">📡</div><h4>UDP + Go-Back-N</h4><p>File transfers use UDP with GBN sliding window for performance and reliability</p></div>
+      <div class="tc"><div class="ti">🧵</div><h4>Threading</h4><p>thread.start_new_thread() for concurrent send/receive — full-duplex I/O</p></div>
+      <div class="tc"><div class="ti">📦</div><h4>16KB Chunks</h4><p>BUF_SIZE = 16*1024 — memory efficient, smooth progress tracking</p></div>
+      <div class="tc"><div class="ti">🏠</div><h4>Chatrooms</h4><p>Named rooms with optional password protection, broadcast and unicast messaging</p></div>
+    </div>
+    <div class="proto-box">
+      <div class="proto-title">Custom Communication Protocol</div>
+      <div class="proto-rows">
+        <div class="pr"><span class="ptag g">MSG</span><code>MSG::Hello, how are you?</code><span class="pd">Text message via TCP</span></div>
+        <div class="pr"><span class="ptag b">FILE</span><code>FILE::report.pdf::2048</code><span class="pd">File name + size header</span></div>
+        <div class="pr"><span class="ptag o">CMD</span><code>@alice|getfile|notes.txt</code><span class="pd">Peer file request</span></div>
+        <div class="pr"><span class="ptag p">ACK</span><code>16|ACK  /  15|NACK</code><span class="pd">Go-Back-N acknowledgement</span></div>
+        <div class="pr"><span class="ptag r">SYS</span><code>OK|Username accepted</code><span class="pd">Server control messages</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="lsec alt">
+    <div class="sec-hd"><span class="sec-tag">Roadmap</span><h2>Planned Enhancements</h2></div>
+    <div class="scope-grid">
+      <div class="si"><span>🌐</span>Multi-client Support</div>
+      <div class="si"><span>📢</span>Broadcast Messaging</div>
+      <div class="si"><span>📊</span>Transfer Progress Bar</div>
+      <div class="si"><span>🔐</span>SSL/TLS Encryption</div>
+      <div class="si"><span>🖥️</span>GUI Interface</div>
+      <div class="si"><span>🔍</span>Auto Device Discovery</div>
+      <div class="si"><span>🔄</span>Resume on Disconnect</div>
+      <div class="si"><span>🌍</span>NAT Traversal</div>
+      <div class="si"><span>🗜️</span>On-the-fly Compression</div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="fb"><span class="logo-bolt">⚡</span><span class="logo-text">PeerLink</span><p>WiFi-Based P2P File Transfer &amp; Chat · TCP Sockets · No Cloud</p></div>
+      <div class="fl">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#tech">Tech Stack</a>
+        <button class="fl-btn" id="footerLaunchBtn">Launch App</button>
+      </div>
+      <p class="fn">Built from: chat-based-file-transfer · Konnect · Peer-2-peer-file-transfer repos</p>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP PAGE
+══════════════════════════════════════════ -->
+<div id="appPage" style="display:none;">
+
+  <!-- CONNECT SCREEN -->
+  <div id="connectScreen" class="app-screen">
+    <div class="cs-wrap">
+      <div class="cs-hero">
+        <div class="cs-logo">⚡</div>
+        <h2>PeerLink</h2>
+        <p>Open this page in <strong>two browser tabs</strong>. Share your Peer ID with the other tab to connect peer-to-peer.</p>
+      </div>
+      <div class="cs-card">
+        <div class="cs-tabs">
+          <button class="cstab active" id="tab-myid" onclick="switchTab('myid')">📋 My Peer ID</button>
+          <button class="cstab" id="tab-connect" onclick="switchTab('connect')">🔗 Connect to Peer</button>
+        </div>
+
+        <!-- MY ID TAB -->
+        <div id="pane-myid" class="cs-pane">
+          <p class="cs-desc">Share this ID with your peer so they can connect to you.</p>
+          <div class="pid-row">
+            <input type="text" id="myPeerId" readonly class="pid-input" value="Connecting to server..."/>
+            <button class="btn-copy" id="copyBtn" onclick="copyId()">Copy</button>
+          </div>
+          <div class="waiting-row" id="waitingRow">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span>Waiting for peer to connect...</span>
+          </div>
+        </div>
+
+        <!-- CONNECT TAB -->
+        <div id="pane-connect" class="cs-pane" style="display:none;">
+          <p class="cs-desc">Enter your peer's ID to establish a direct connection.</p>
+          <div class="cs-field">
+            <label>Peer ID</label>
+            <input type="text" id="remotePeerId" class="cs-input" placeholder="Paste peer ID here..."/>
+          </div>
+          <div class="cs-field">
+            <label>Your Name</label>
+            <input type="text" id="myUsername" class="cs-input" placeholder="e.g. Alice" maxlength="20"/>
+          </div>
+          <button class="btn-primary w100" id="connectBtn" onclick="doConnect()">⚡ Connect</button>
+          <div id="connectError" class="cs-error" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none;" class="app-screen">
+    <div class="dash">
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sb-card peer-info-card">
+          <div class="peer-av" id="peerAv">P</div>
+          <div class="peer-nm" id="peerNm">Peer</div>
+          <div class="peer-id-sm" id="peerIdSm">—</div>
+          <div class="peer-online"><span class="online-dot"></span>Connected · Encrypted</div>
+        </div>
+        <div class="sb-card my-info-card">
+          <div class="my-lbl">You</div>
+          <div class="my-nm" id="myNm">—</div>
+          <div class="my-id" id="myId">—</div>
+        </div>
+        <div class="sb-card stats-card">
+          <div class="sr"><span>Protocol</span><span class="sv">WebRTC DataChannel</span></div>
+          <div class="sr"><span>Chunk Size</span><span class="sv">64 KB</span></div>
+          <div class="sr"><span>Messages</span><span class="sv" id="statMsgs">0</span></div>
+          <div class="sr"><span>Files Sent</span><span class="sv" id="statSent">0</span></div>
+          <div class="sr"><span>Files Recv</span><span class="sv" id="statRecv">0</span></div>
+          <div class="sr"><span>Security</span><span class="sv green">E2E Encrypted</span></div>
+        </div>
+        <div class="sb-card log-card">
+          <div class="log-hd">📡 Packet Log</div>
+          <div class="log-body" id="packetLog"></div>
+        </div>
+      </aside>
+
+      <!-- CHAT -->
+      <main class="chat-main">
+        <div class="chat-bar">
+          <div class="chat-bar-left">
+            <div class="chat-av" id="chatAv">P</div>
+            <div>
+              <div class="chat-nm" id="chatNm">Peer</div>
+              <div class="chat-sub">TCP · Direct · Encrypted</div>
             </div>
-        </section>
+          </div>
+          <button class="icon-btn" onclick="clearChat()" title="Clear chat">🗑️</button>
+        </div>
+        <div class="chat-msgs" id="chatMsgs">
+          <div class="sys-msg">🔗 Connection established. Messages are end-to-end encrypted.</div>
+        </div>
+        <div class="composer">
+          <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">📎</button>
+          <input type="file" id="fileInput" style="display:none;" onchange="handleFileSelect(this)"/>
+          <input type="text" id="msgInput" class="composer-input" placeholder="Type a message... (Enter to send)" onkeydown="if(event.key==='Enter')sendMessage()"/>
+          <button class="send-btn" onclick="sendMessage()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </main>
 
-        <!-- Main App Interface (Hidden until connected) -->
-        <section id="app-panel" class="panel app-panel" style="display: none;">
-            <div class="dashboard-grid">
-                
-                <!-- Activity Panel (Connected Devices) -->
-                <div class="card activity-panel">
-                    <h3 class="card-title">Network Activity</h3>
-                    <div class="device-list">
-                        <div class="device-item active">
-                            <div class="device-avatar">P</div>
-                            <div class="device-info">
-                                <h4>Connected Peer</h4>
-                                <span id="connected-peer-id">Unknown ID</span>
-                            </div>
-                            <div class="device-status"></div>
-                        </div>
-                    </div>
-                    <div class="connection-stats">
-                        <div class="stat">
-                            <span class="stat-label">Security</span>
-                            <span class="stat-value" style="color:var(--success);">End-to-End Encrypted</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Protocol</span>
-                            <span class="stat-value">WebRTC</span>
-                        </div>
-                    </div>
-                </div>
+      <!-- FILE PANEL -->
+      <aside class="file-panel">
+        <div class="fp-hd">📁 File Transfer</div>
+        <div class="drop-zone" id="dropZone"
+             ondragover="event.preventDefault();this.classList.add('dz-over')"
+             ondragleave="this.classList.remove('dz-over')"
+             ondrop="handleDrop(event)"
+             onclick="document.getElementById('fileInput').click()">
+          <div class="dz-ico">📂</div>
+          <div class="dz-txt">Drop files here<br/><span>or click to browse</span></div>
+        </div>
+        <div class="fp-sec-title">Transfers</div>
+        <div class="tx-list" id="txList"><div class="no-tx">No transfers yet</div></div>
+        <div class="proto-ref">
+          <div class="pref-title">Protocol</div>
+          <div class="pref-row"><span class="prtag">file_start</span><span>name + size</span></div>
+          <div class="pref-row"><span class="prtag">file_chunk</span><span>64KB binary</span></div>
+          <div class="pref-row"><span class="prtag">file_done</span><span>complete signal</span></div>
+          <div class="pref-row"><span class="prtag">chat</span><span>MSG:: text</span></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
 
-                <!-- Chat Content Card -->
-                <div class="card chat-card">
-                    <h3 class="card-title">Real-Time Chat</h3>
-                    <div class="chat-container" id="chat-container">
-                        <div class="message system">
-                            <p>Connection established. Messages are encrypted peer-to-peer.</p>
-                        </div>
-                        <!-- Messages will be injected here -->
-                    </div>
-                    <div class="chat-input-area">
-                        <input type="text" id="message-input" placeholder="Type a message..." class="input-field">
-                        <button id="send-msg-btn" class="btn btn-primary">Send</button>
-                    </div>
-                </div>
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
 
-                <!-- File Transfer Content Card -->
-                <div class="card file-card">
-                    <h3 class="card-title">File Transfer</h3>
-                    
-                    <div class="file-drop-zone" id="file-drop-zone">
-                        <div class="upload-icon">📄</div>
-                        <p>Drag & drop files here or <span>browse</span></p>
-                        <input type="file" id="file-input" style="display: none;">
-                    </div>
-                    
-                    <div class="transfer-list" id="transfer-list">
-                        <h4 class="section-subtitle">Recent Transfers</h4>
-                        <!-- Transfer items will be injected here -->
-                    </div>
-                </div>
-                
-            </div>
-        </section>
-    </main>
-
-    <!-- Load PeerJS for WebRTC -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="script.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
